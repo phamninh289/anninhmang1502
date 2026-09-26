@@ -1412,7 +1412,11 @@
       "44", "t.u tu", "t u tu", "tutu",
       "bao luc", "bat nat", "bao luc hoc duong", "bao luc gia dinh",
       "bao luc mang", "body shaming", "che bai ngoai hinh",
-      "mau thuan", "blgd", "blhd"
+      "mau thuan", "blgd", "blhd",
+      "minh muon dung lai", "toi muon dung lai", "em muon dung lai",
+      "minh khong muon tiep tuc", "toi khong muon tiep tuc",
+      "em khong muon tiep tuc", "minh can ai do lang nghe",
+      "toi can ai do lang nghe", "em can ai do lang nghe"
     ];
 
     const suspiciousLinkKeywords = [
@@ -2082,14 +2086,15 @@ Mình đang nghe bạn. Bạn cứ kể nhé.`;
       const clean = normalizeText(raw);
       const collapsed = collapseForModeration(raw);
 
-      // Bài tâm sự/cần giúp đỡ vẫn được đăng. Hàm này chỉ dùng để
-      // chuyển bài sang luồng hỗ trợ của Tư vấn và tắt bot social.
+      // Bài tâm sự/cầu cứu được phép đăng. Hàm này CHỈ kích hoạt
+      // luồng hỗ trợ của Tư vấn, không phải bộ lọc chặn bài.
       return advisorSupportPatterns.some(pattern => {
         const p = normalizeText(pattern);
         const compact = p.replace(/\s/g, "");
         return clean.includes(p) || collapsed.includes(compact);
       }) || detectSelfHarm(raw) ||
-        /(?:^|\s)44(?:\s|$)/.test(clean);
+        /(?:^|\s)44(?:\s|$)/.test(clean) ||
+        /\b(?:minh|toi|em)\s+muon\s+dung\s+lai\b/.test(clean);
     }
 
     function generateAdvisorSupportMessage(postText) {
@@ -2943,6 +2948,7 @@ Mình đang nghe bạn. Bạn cứ kể nhé.`;
 
       // Tư vấn được ưu tiên xử lý nhanh cho các bài tâm sự/cần hỗ trợ.
       // Không chặn bài viết: bài vẫn được đăng bình thường.
+      // Phân tích trong khoảng 1 giây rồi Tư vấn chủ động nhắn hỗ trợ.
       const advisorDelay = supportPost ? 1000 : 2000;
       setTimeout(() => {
         if (!supportPost) return;
@@ -2959,10 +2965,10 @@ Mình đang nghe bạn. Bạn cứ kể nhé.`;
 
         state.messages.advisor.push(advisorMessage);
         addNotification("💙 Tư vấn vừa chủ động gửi bạn một tin nhắn hỗ trợ.");
-        addActivity("💙 Sau 2 giây, hệ thống phát hiện bài viết có dấu hiệu người dùng đang cần được lắng nghe.");
+        addActivity("💙 AI đã phát hiện dấu hiệu người dùng cần được lắng nghe trong khoảng 1 giây và chuyển sang Tư vấn.");
         if (state.currentBot === "advisor") renderMessages();
         showToast("💙 Tư vấn đã gửi bạn một tin nhắn hỗ trợ.");
-      }, 2000);
+      }, advisorDelay);
 
       $("postInput").value = "";
       state.postImage = "";
